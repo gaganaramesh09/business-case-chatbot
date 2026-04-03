@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CaseIQ — Business Case Advisor</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy:    #0a0e1a;
+      --navy2:   #0f1525;
+      --navy3:   #161d30;
+      --navy4:   #1e2740;
+      --teal:    #00d4b4;
+      --teal2:   #00b89c;
+      --teal-dim: rgba(0,212,180,0.12);
+      --amber:   #f5a623;
+      --amber-dim: rgba(245,166,35,0.12);
+      --slate:   #8892a4;
+      --slate2:  #b0bac8;
+      --white:   #e8edf5;
+      --border:  rgba(255,255,255,0.07);
+      --border2: rgba(0,212,180,0.25);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--navy);
+      color: var(--white);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .bg-grid {
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,212,180,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,212,180,0.03) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none; z-index: 0;
+    }
+
+    .bg-orb {
+      position: fixed; border-radius: 50%;
+      filter: blur(80px); pointer-events: none; z-index: 0;
+      animation: drift 18s ease-in-out infinite alternate;
+    }
+    .bg-orb-1 { width: 400px; height: 400px; background: rgba(0,212,180,0.07); top: -100px; right: -80px; }
+    .bg-orb-2 { width: 300px; height: 300px; background: rgba(245,166,35,0.06); bottom: 0; left: -60px; animation-delay: -9s; }
+    @keyframes drift { from { transform: translate(0,0) scale(1); } to { transform: translate(20px,30px) scale(1.05); } }
+
+    #shell {
+      position: relative; z-index: 1;
+      display: flex; flex-direction: column;
+      height: 100vh; max-width: 900px;
+      margin: 0 auto; width: 100%; padding: 0 1rem;
+    }
+
+    #header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 0 16px; flex-shrink: 0;
+    }
+
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo-mark {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: var(--teal); display: flex; align-items: center; justify-content: center;
+      position: relative; overflow: hidden;
+    }
+    .logo-mark::after {
+      content: ''; position: absolute;
+      width: 18px; height: 18px;
+      border: 2.5px solid var(--navy); border-radius: 50%;
+      top: 50%; left: 50%; transform: translate(-50%,-50%);
+    }
+    .logo-mark::before {
+      content: ''; position: absolute;
+      width: 8px; height: 8px; background: var(--navy);
+      border-radius: 50%; top: 50%; left: 50%;
+      transform: translate(-50%,-50%); z-index: 1;
+    }
+    .logo-text { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 20px; letter-spacing: -0.02em; color: var(--white); }
+    .logo-text span { color: var(--teal); }
+    .header-badge {
+      font-size: 11px; font-weight: 500; color: var(--teal);
+      background: var(--teal-dim); border: 1px solid var(--border2);
+      border-radius: 20px; padding: 4px 12px; letter-spacing: 0.04em;
+    }
+
+    #pills-row {
+      display: flex; gap: 8px; padding-bottom: 14px;
+      flex-shrink: 0; overflow-x: auto; scrollbar-width: none;
+    }
+    #pills-row::-webkit-scrollbar { display: none; }
+
+    .pill {
+      font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500;
+      padding: 6px 14px; border-radius: 24px; border: 1px solid var(--border);
+      color: var(--slate2); background: var(--navy3);
+      cursor: pointer; white-space: nowrap; flex-shrink: 0;
+      transition: all 0.2s ease;
+    }
+    .pill:hover { border-color: var(--teal2); color: var(--teal); transform: translateY(-1px); }
+    .pill.active { border-color: var(--teal); color: var(--navy); background: var(--teal); }
+
+    #chat-window {
+      flex: 1; background: var(--navy2); border: 1px solid var(--border);
+      border-radius: 20px; display: flex; flex-direction: column;
+      overflow: hidden; min-height: 0; position: relative;
+      margin-bottom: 1rem;
+    }
+    #chat-window::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--teal), transparent); opacity: 0.6;
+    }
+
+    #messages {
+      flex: 1; overflow-y: auto; padding: 24px 24px 8px;
+      display: flex; flex-direction: column; gap: 20px;
+      scrollbar-width: thin; scrollbar-color: var(--navy4) transparent;
+    }
+    #messages::-webkit-scrollbar { width: 4px; }
+    #messages::-webkit-scrollbar-thumb { background: var(--navy4); border-radius: 4px; }
+
+    .msg { display: flex; gap: 12px; align-items: flex-start; animation: msgIn 0.3s ease forwards; }
+    .msg.user { flex-direction: row-reverse; }
+    @keyframes msgIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    .msg-avatar {
+      width: 32px; height: 32px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Syne', sans-serif; font-size: 10px; font-weight: 700;
+      flex-shrink: 0; margin-top: 2px;
+    }
+    .msg.bot .msg-avatar { background: var(--teal-dim); border: 1px solid var(--border2); color: var(--teal); }
+    .msg.user .msg-avatar { background: var(--amber-dim); border: 1px solid rgba(245,166,35,0.25); color: var(--amber); }
+
+    .bubble { max-width: 75%; padding: 14px 18px; font-size: 14px; line-height: 1.7; }
+    .msg.bot .bubble { background: var(--navy3); border: 1px solid var(--border); color: var(--white); border-radius: 4px 16px 16px 16px; }
+    .msg.user .bubble { background: linear-gradient(135deg, var(--navy4), #1a2540); border: 1px solid rgba(245,166,35,0.2); color: var(--slate2); border-radius: 16px 4px 16px 16px; }
+
+    .typing-dots { display: flex; gap: 5px; align-items: center; padding: 4px 0; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--teal); opacity: 0.4; animation: pulse 1.4s ease-in-out infinite; }
+    .dot:nth-child(2) { animation-delay: 0.2s; }
+    .dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes pulse { 0%,80%,100% { opacity:0.4; transform:scale(1); } 40% { opacity:1; transform:scale(1.2); } }
+
+    #input-wrap { padding: 16px 20px 20px; flex-shrink: 0; }
+    #input-box {
+      display: flex; align-items: flex-end; gap: 10px;
+      background: var(--navy3); border: 1px solid var(--border);
+      border-radius: 16px; padding: 10px 10px 10px 16px;
+      transition: border-color 0.2s;
+    }
+    #input-box:focus-within { border-color: rgba(0,212,180,0.4); }
+
+    #user-input {
+      flex: 1; background: transparent; border: none; outline: none;
+      resize: none; font-family: 'DM Sans', sans-serif; font-size: 14px;
+      color: var(--white); line-height: 1.6; min-height: 24px; max-height: 120px;
+      overflow-y: auto; scrollbar-width: none;
+    }
+    #user-input::placeholder { color: var(--slate); }
+
+    #send-btn {
+      width: 38px; height: 38px; border-radius: 12px; border: none;
+      background: var(--teal); color: var(--navy); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: all 0.2s ease;
+    }
+    #send-btn:hover { background: #00f0cc; transform: scale(1.05); }
+    #send-btn:active { transform: scale(0.97); }
+    #send-btn:disabled { background: var(--navy4); cursor: not-allowed; transform: none; }
+
+    .input-hint { font-size: 11px; color: var(--slate); padding: 6px 4px 0; text-align: right; }
+
+    .bubble h2 { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; color: var(--teal); margin: 14px 0 6px; letter-spacing: -0.01em; }
+    .bubble h3 { font-size: 13px; font-weight: 500; color: var(--slate2); margin: 10px 0 4px; }
+    .bubble ul { margin: 8px 0; padding-left: 18px; }
+    .bubble li { margin-bottom: 4px; color: var(--slate2); }
+    .bubble strong { font-weight: 500; color: var(--white); }
+    .bubble em { color: var(--amber); font-style: normal; }
+    .bubble code { font-size: 12px; background: var(--navy4); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; color: var(--teal); }
+
+    #welcome { text-align: center; padding: 36px 20px; animation: fadeIn 0.6s ease forwards; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .welcome-icon {
+      width: 56px; height: 56px; background: var(--teal-dim);
+      border: 1px solid var(--border2); border-radius: 18px;
+      display: flex; align-items: center; justify-content: center; margin: 0 auto 18px;
+    }
+    .welcome-title { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; color: var(--white); margin-bottom: 8px; letter-spacing: -0.03em; }
+    .welcome-sub { font-size: 14px; color: var(--slate); max-width: 380px; margin: 0 auto 24px; line-height: 1.6; }
+    .welcome-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 500px; margin: 0 auto; }
+    .welcome-card {
+      background: var(--navy3); border: 1px solid var(--border);
+      border-radius: 12px; padding: 12px; text-align: left;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .welcome-card:hover { border-color: var(--teal2); transform: translateY(-2px); }
+    .wc-icon { font-size: 18px; margin-bottom: 6px; }
+    .wc-label { font-size: 12px; font-weight: 500; color: var(--slate2); }
+  </style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-orb bg-orb-1"></div>
+<div class="bg-orb bg-orb-2"></div>
+
+<div id="shell">
+  <div id="header">
+    <div class="logo">
+      <div class="logo-mark"></div>
+      <div class="logo-text">Case<span>IQ</span></div>
+    </div>
+    <div class="header-badge">AI Consulting Advisor</div>
+  </div>
+
+  <div id="pills-row">
+    <button class="pill" onclick="loadScenario('market_entry', this)">⬡ Market Entry</button>
+    <button class="pill" onclick="loadScenario('roi', this)">◈ ROI Analysis</button>
+    <button class="pill" onclick="loadScenario('cost_benefit', this)">◇ Cost-Benefit</button>
+    <button class="pill" onclick="loadScenario('growth', this)">↗ Growth Strategy</button>
+    <button class="pill" onclick="loadScenario('valuation', this)">◎ Valuation</button>
+    <button class="pill" onclick="loadScenario('make_buy', this)">⊕ Make vs Buy</button>
+  </div>
+
+  <div id="chat-window">
+    <div id="messages">
+      <div id="welcome">
+        <div class="welcome-icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#00d4b4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="welcome-title">Your AI Business Analyst</div>
+        <div class="welcome-sub">Describe a business scenario and I'll apply consulting frameworks, run the numbers, and give you a clear recommendation.</div>
+        <div class="welcome-cards">
+          <div class="welcome-card" onclick="loadScenario('market_entry', null)">
+            <div class="wc-icon">🌏</div>
+            <div class="wc-label">Market entry analysis</div>
+          </div>
+          <div class="welcome-card" onclick="loadScenario('valuation', null)">
+            <div class="wc-icon">📊</div>
+            <div class="wc-label">Company valuation</div>
+          </div>
+          <div class="welcome-card" onclick="loadScenario('roi', null)">
+            <div class="wc-icon">💹</div>
+            <div class="wc-label">ROI modeling</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="input-wrap">
+      <div id="input-box">
+        <textarea id="user-input" placeholder="Describe your business scenario…" rows="1"
+          onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <button id="send-btn" onclick="sendMessage()" title="Send">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M2 8L14 2L8 14L7 9L2 8Z" fill="currentColor"/>
+          </svg>
+        </button>
+      </div>
+      <div class="input-hint">Enter to send · Shift+Enter for new line</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_URL = "http://localhost:8000/chat";
+
+const SCENARIOS = {
+  market_entry: "I want to evaluate entering the Southeast Asian e-commerce market. What should I consider and what does the opportunity look like?",
+  roi: "Help me build an ROI analysis for a $2M investment in automation software that saves 3 FTEs and reduces error rates by 20%.",
+  cost_benefit: "We're considering moving our on-premise data center to the cloud. Can you run a full cost-benefit analysis including migration risks?",
+  growth: "Our SaaS company is at $5M ARR and growing 40% YoY. How should we think about our growth strategy for the next 18 months?",
+  valuation: "Help me estimate the valuation of a B2B fintech startup with $8M ARR, 120% NRR, and 3 years of runway.",
+  make_buy: "Should we build our own CRM or buy Salesforce? We have 200 sales reps and a 12-person eng team already stretched thin."
+};
+
+const SYSTEM_PROMPT = `You are CaseIQ — a sharp, senior management consultant and financial analyst at a top-tier firm.
+
+When a user presents a business scenario:
+1. Identify the core business question immediately
+2. Apply the most relevant frameworks (MECE, Porter's Five Forces, BCG matrix, unit economics, DCF, IRR, payback period, etc.) — name which you're using
+3. Structure your answer with clear section headers using ##
+4. For financial analyses, show explicit calculations and assumptions with numbers
+5. Use bullet points for key drivers, risks, and recommendations
+6. Flag the top 2-3 risks or sensitivities clearly
+7. End with a crisp, actionable recommendation
+
+Style: Sharp, confident, like a well-structured consulting slide. Not a textbook. Be specific — use numbers, percentages, timeframes. Use **bold** for key terms and metrics.`;
+
+let history = [];
+let isLoading = false;
+let welcomeRemoved = false;
+
+function removeWelcome() {
+  if (!welcomeRemoved) {
+    const w = document.getElementById('welcome');
+    if (w) { w.style.opacity = '0'; w.style.transition = 'opacity 0.3s'; setTimeout(() => w.remove(), 300); }
+    welcomeRemoved = true;
+  }
+}
+
+function appendMsg(role, html) {
+  removeWelcome();
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg ' + (role === 'user' ? 'user' : 'bot');
+  div.innerHTML = `<div class="msg-avatar">${role === 'user' ? 'YOU' : 'IQ'}</div><div class="bubble">${html}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function showTyping() {
+  removeWelcome();
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg bot'; div.id = 'typing-indicator';
+  div.innerHTML = `<div class="msg-avatar">IQ</div><div class="bubble"><div class="typing-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function removeTyping() { const t = document.getElementById('typing-indicator'); if (t) t.remove(); }
+
+function mdToHtml(text) {
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/`(.+?)`/g,'<code>$1</code>')
+    .replace(/^## (.+)$/gm,'<h2>$1</h2>')
+    .replace(/^### (.+)$/gm,'<h3>$1</h3>')
+    .replace(/^- (.+)$/gm,'<li>$1</li>')
+    .replace(/(<li>.*<\/li>\n?)+/g, s => `<ul>${s}</ul>`)
+    .replace(/\n\n/g,'<br><br>').replace(/\n/g,'<br>');
+}
+
+async function sendMessage() {
+  if (isLoading) return;
+  const input = document.getElementById('user-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = ''; input.style.height = 'auto';
+  document.getElementById('send-btn').disabled = true;
+  appendMsg('user', text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'));
+  history.push({ role: 'user', content: text });
+  showTyping(); isLoading = true;
+
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: history })
+    });
+    const data = await res.json();
+    const reply = data.reply;
+    history.push({ role: 'assistant', content: reply });
+    removeTyping(); appendMsg('bot', mdToHtml(reply));
+  } catch (e) {
+    removeTyping();
+    appendMsg('bot', '<strong style="color:#f5a623">⚠ Backend offline.</strong> Start the FastAPI server: <code>uvicorn main:app --reload</code>');
+  }
+  isLoading = false; document.getElementById('send-btn').disabled = false;
+}
+
+function handleKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
+function autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; }
+function loadScenario(key, pill) {
+  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+  if (pill) pill.classList.add('active');
+  const input = document.getElementById('user-input');
+  input.value = SCENARIOS[key]; autoResize(input); input.focus();
+}
+</script>
+</body>
+</html>
