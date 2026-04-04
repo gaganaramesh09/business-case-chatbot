@@ -12,27 +12,25 @@ app = FastAPI(title="Business Case Chatbot API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"]
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
-SYSTEM_PROMPT = """You are a sharp, experienced management consultant and financial analyst. 
-You help users analyze business cases with rigor and clarity.
+SYSTEM_PROMPT = """You are a sharp, experienced management consultant and financial analyst. You help users analyze business cases with rigor and clarity.
 
 When a user presents a business scenario:
 1. Identify the core business question
-2. Apply relevant frameworks (MECE thinking, Porter's Five Forces, unit economics, DCF, etc.) and mention which you're using
-3. Structure your answer with clear sections when complex
-4. For financial analyses, show key calculations and assumptions explicitly
+2. Apply relevant frameworks and mention which you are using
+3. Structure your answer with clear sections
+4. For financial analyses, show key calculations and assumptions
 5. Flag risks and sensitivities
-6. End with a clear recommendation or next step
+6. End with a clear recommendation
 
-Keep responses focused and actionable — like a smart consulting deck slide, not a textbook.
-Use plain language. Format with markdown where helpful (headers, bullet lists, tables for financials)."""
+Keep responses focused and actionable. Use plain language. Format with markdown where helpful."""
 
 
 class Message(BaseModel):
@@ -56,13 +54,11 @@ def root():
 @app.post("/chat", response_model=ChatResponse)
 def chat(request: ChatRequest):
     messages = [{"role": m.role, "content": m.content} for m in request.messages]
-
     response = client.messages.create(
         model="claude-opus-4-5",
         max_tokens=1024,
         system=SYSTEM_PROMPT,
         messages=messages,
     )
-
     reply = response.content[0].text
     return ChatResponse(reply=reply)
